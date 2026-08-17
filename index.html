@@ -11,9 +11,10 @@
         h2 { text-align: center; font-size: 16px; margin: 0 0 12px 0; color: #ccc; }
 
         .input-section { background: #2d2d2d; padding: 10px; border-radius: 6px; margin-bottom: 12px; }
-        .form-group { margin-bottom: 0; }
-        label { display: block; font-size: 11px; color: #aaa; margin-bottom: 2px; }
-        input { width: 100%; padding: 6px 8px; box-sizing: border-box; background: #1f1f1f; border: 1px solid #444; color: #fff; border-radius: 4px; font-size: 14px; }
+        .form-row { display: flex; gap: 6px; }
+        .form-group { flex: 1; margin-bottom: 0; }
+        label { display: block; font-size: 10px; color: #aaa; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        input { width: 100%; padding: 6px 4px; box-sizing: border-box; background: #1f1f1f; border: 1px solid #444; color: #fff; border-radius: 4px; font-size: 13px; text-align: center; }
         input:focus { border-color: #60cdff; outline: none; }
 
         /* Layar Utama Kalkulator */
@@ -21,7 +22,7 @@
         .screen-label { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; }
         .screen-value { font-size: 22px; font-weight: bold; color: #fff; }
 
-        /* Keypad Grid ala Windows - Diperbesar ukuran angkanya dan diisi penuh tanpa kosong */
+        /* Keypad Grid ala Windows */
         .keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
         .btn { background: #3b3b3b; border: none; color: #fff; padding: 14px; font-size: 16px; font-weight: 600; border-radius: 4px; cursor: pointer; transition: background 0.1s; }
         .btn:hover { background: #4a4a4a; }
@@ -34,6 +35,8 @@
         .results-container { margin-top: 10px; border-top: 1px solid #333; padding-top: 8px; }
         .res-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: #ccc; }
         .res-row span:last-child { font-weight: bold; color: #60cdff; }
+        
+        /* Warna hijau untuk hasil utama & muqosah */
         .highlight-row span:last-child { color: #2ecc71; font-size: 13px; }
     </style>
 </head>
@@ -42,34 +45,37 @@
 <div class="calculator">
     <h2>Kalkulator Pembiayaan</h2>
 
-    <!-- Input Parameter Tenor & Margin Saja -->
+    <!-- Input Parameter 3 Kolom Berjajar -->
     <div class="input-section">
-        <div style="display: flex; gap: 8px;">
-            <div class="form-group" style="flex: 1;">
-                <label>Tenor (Bulan):</label>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Tenor (Bln):</label>
                 <input type="number" id="tenor" value="25" oninput="hitungSemua()">
             </div>
-            <div class="form-group" style="flex: 1;">
+            <div class="form-group">
                 <label>Margin (%):</label>
                 <input type="number" id="persenMargin" value="12" oninput="hitungSemua()">
+            </div>
+            <div class="form-group">
+                <label>Pelunasan Ke:</label>
+                <input type="number" id="bulanPelunasan" value="12" oninput="hitungSemua()">
             </div>
         </div>
     </div>
 
-    <!-- Layar Utama Kalkulator (Nilai Pembiayaan Aktif yang Besar) -->
+    <!-- Layar Utama Kalkulator -->
     <div class="display-screen">
         <div class="screen-label">Nilai Pembiayaan (Aktif)</div>
         <div class="screen-value" id="mainDisplay">Rp 2.000.000</div>
     </div>
 
-    <!-- Keypad Penuh Tanpa Ruang Kosong & Angka Diperbesar -->
+    <!-- Keypad Penuh -->
     <div class="keypad">
         <button class="btn btn-dark" onclick="inputKey('%')">%</button>
         <button class="btn btn-dark" onclick="clearInput()">CE</button>
         <button class="btn btn-dark" onclick="clearInput()">C</button>
         <button class="btn btn-dark" onclick="deleteDigit()">⌫</button>
 
-        <!-- Baris kedua diisi penuh tombol tambahan agar rapi -->
         <button class="btn btn-dark" onclick="appendNumber('00')">00</button>
         <button class="btn btn-dark" onclick="appendNumber('000')">000</button>
         <button class="btn btn-dark" onclick="inputKey('0000')">0000</button>
@@ -101,7 +107,13 @@
         <div class="res-row"><span>Hasil Margin:</span> <span id="resMargin">Rp 0</span></div>
         <div class="res-row highlight-row"><span>Angsuran Dibulatkan:</span> <span id="resPembulatan">Rp 0</span></div>
         <div class="res-row"><span>Angsuran Asli:</span> <span id="resAngsuran">Rp 0</span></div>
-        <div class="res-row"><span>Selisih:</span> <span id="resSelisih">Rp 0</span></div>
+        <div class="res-row highlight-row"><span>Selisih:</span> <span id="resSelisih">Rp 0</span></div>
+        <div class="res-row highlight-row" style="border-top: 1px dashed #444; padding-top: 6px; margin-top: 4px;">
+            <span>Muqosah (Potongan/Sisa):</span> <span id="resMuqosah">Rp 0</span>
+        </div>
+        <div class="res-row">
+            <span>Sisa Tenor Berjalan:</span> <span id="resSisaTenor">0 Bulan</span>
+        </div>
     </div>
 </div>
 
@@ -151,18 +163,24 @@ function hitungSemua() {
     let nilai = parseFloat(rawNilai) || 0;
     let tenor = parseFloat(document.getElementById('tenor').value) || 1;
     let pMargin = parseFloat(document.getElementById('persenMargin').value) || 0;
+    let bulanPelunasan = parseFloat(document.getElementById('bulanPelunasan').value) || 0;
 
     let margin = (nilai * (pMargin / 100)) / tenor;
     let pokokPerBulan = nilai / tenor;
     let angsuranAsli = pokokPerBulan + margin;
     let angsuranBulat = Math.ceil(angsuranAsli / 1000) * 1000;
     let selisih = (angsuranBulat - angsuranAsli) * tenor;
+    
+    let muqosah = Math.max(0, (tenor + 1 - bulanPelunasan)) * margin;
+    let sisaTenor = Math.max(0, tenor - bulanPelunasan);
 
     document.getElementById('mainDisplay').innerText = formatRupiah(nilai);
     document.getElementById('resMargin').innerText = formatRupiah(margin);
     document.getElementById('resPembulatan').innerText = formatRupiah(angsuranBulat);
     document.getElementById('resAngsuran').innerText = formatRupiah(angsuranAsli);
     document.getElementById('resSelisih').innerText = formatRupiah(selisih);
+    document.getElementById('resMuqosah').innerText = formatRupiah(muqosah);
+    document.getElementById('resSisaTenor').innerText = sisaTenor + " Bulan";
 }
 
 hitungSemua();
