@@ -32,12 +32,66 @@
         .btn-dark { background: #2d2d2d; color: #ddd; }
         .btn-dark:hover { background: #383838; }
 
-        .results-container { margin-top: 10px; border-top: 1px solid #333; padding-top: 8px; }
+        /* Area Scroll Hasil dengan Jarak Jauh */
+        .results-scroll-area {
+            margin-top: 25px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .results-scroll-area::-webkit-scrollbar {
+            width: 6px;
+        }
+        .results-scroll-area::-webkit-scrollbar-track {
+            background: #1f1f1f;
+            border-radius: 4px;
+        }
+        .results-scroll-area::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+        .results-scroll-area::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .results-container { margin-top: 0; border-top: 1px solid #333; padding-top: 8px; }
         .res-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: #ccc; }
         .res-row span:last-child { font-weight: bold; color: #60cdff; }
         
-        /* Warna hijau untuk hasil utama & muqosah */
-        .highlight-row span:last-child { color: #2ecc71; font-size: 13px; }
+        /* Grup Hasil Utama (Warna Hijau) */
+        .primary-results {
+            background: #1a2e22;
+            border: 1px solid #2ecc71;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .primary-results .res-row span {
+            color: #e2f0d9;
+        }
+        .primary-results .highlight-row span:last-child { 
+            color: #2ecc71; 
+            font-size: 13px; 
+            font-weight: bold;
+        }
+
+        /* Grup Hasil Tambahan (Warna Merah) */
+        .red-results {
+            background: #2e1a1a;
+            border: 1px solid #e74c3c;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .red-results .res-row span {
+            color: #f9d5d5;
+        }
+        .red-results .highlight-red-row span:last-child { 
+            color: #e74c3c; 
+            font-size: 13px; 
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -102,17 +156,30 @@
         <button class="btn btn-blue" onclick="hitungSemua()">=</button>
     </div>
 
-    <!-- Rincian Hasil Lengkap -->
-    <div class="results-container">
-        <div class="res-row"><span>Hasil Margin:</span> <span id="resMargin">Rp 0</span></div>
-        <div class="res-row highlight-row"><span>Angsuran | angsuran MMU:</span> <span id="resPembulatan">Rp 0</span></div>
-        <div class="res-row"><span>Angsuran Asli:</span> <span id="resAngsuran">Rp 0</span></div>
-        <div class="res-row highlight-row"><span>pembulatan | Pembiyaan MTG:</span> <span id="resSelisih">Rp 0</span></div>
-        <div class="res-row highlight-row" style="border-top: 1px dashed #444; padding-top: 6px; margin-top: 4px;">
-            <span>Muqosah (Potongan/Sisa):</span> <span id="resMuqosah">Rp 0</span>
+    <!-- Area Hasil Scroll -->
+    <div class="results-scroll-area">
+        <div class="results-container">
+            <div class="res-row"><span>Hasil Margin:</span> <span id="resMargin">Rp 0</span></div>
+            <div class="res-row"><span>Angsuran Asli:</span> <span id="resAngsuran">Rp 0</span></div>
         </div>
-        <div class="res-row">
-            <span>Sisa Tenor Berjalan:</span> <span id="resSisaTenor">0 Bulan</span>
+
+        <!-- Kelompok Hasil Utama (Hijau) -->
+        <div class="primary-results">
+            <div class="res-row highlight-row"><span>Angsuran | angsuran MMU:</span> <span id="resPembulatan">Rp 0</span></div>
+            <div class="res-row highlight-row"><span>pembulatan | Pembiyaan MTG:</span> <span id="resSelisih">Rp 0</span></div>
+            <div class="res-row highlight-row" style="margin-top: 4px;">
+                <span>Muqosah (Potongan/Sisa):</span> <span id="resMuqosah">Rp 0</span>
+            </div>
+        </div>
+
+        <!-- Kelompok Variabel Baru (Merah) -->
+        <div class="red-results">
+            <div class="res-row highlight-red-row"><span>Tr 4%:</span> <span id="resTr4">Rp 0</span></div>
+            <div class="res-row highlight-red-row"><span>Kebijakan:</span> <span id="resKebijakan">Rp 0</span></div>
+            <div class="res-row highlight-red-row"><span>SPP:</span> <span id="resSpp">Rp 0</span></div>
+            <div class="res-row highlight-red-row" style="margin-top: 4px;">
+                <span>Minggon:</span> <span id="resMinggon">Rp 0</span>
+            </div>
         </div>
     </div>
 </div>
@@ -172,7 +239,15 @@ function hitungSemua() {
     let selisih = (angsuranBulat - angsuranAsli) * tenor;
     
     let muqosah = Math.max(0, (tenor + 1 - bulanPelunasan)) * margin;
-    let sisaTenor = Math.max(0, tenor - bulanPelunasan);
+
+    let tr4 = nilai * 0.04;
+    let kebijakan = nilai * 0.01;
+    
+    let unitSpp = Math.ceil(nilai / 1000000);
+    let spp = unitSpp * 10000;
+
+    let unitMinggon = Math.floor(nilai / 1000000);
+    let minggon = (unitMinggon * 1000) + 3000;
 
     document.getElementById('mainDisplay').innerText = formatRupiah(nilai);
     document.getElementById('resMargin').innerText = formatRupiah(margin);
@@ -180,7 +255,11 @@ function hitungSemua() {
     document.getElementById('resAngsuran').innerText = formatRupiah(angsuranAsli);
     document.getElementById('resSelisih').innerText = formatRupiah(selisih);
     document.getElementById('resMuqosah').innerText = formatRupiah(muqosah);
-    document.getElementById('resSisaTenor').innerText = sisaTenor + " Bulan";
+
+    document.getElementById('resTr4').innerText = formatRupiah(tr4);
+    document.getElementById('resKebijakan').innerText = formatRupiah(kebijakan);
+    document.getElementById('resSpp').innerText = formatRupiah(spp);
+    document.getElementById('resMinggon').innerText = formatRupiah(minggon);
 }
 
 hitungSemua();
